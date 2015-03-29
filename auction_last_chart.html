@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum Auction - 2015</title>
+  <meta charset="utf-8">
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  
+    <style>
+body {
+  font: 12px georgia-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.tooltip1{
+	text-anchor: left;
+	font-family: times-serif;
+	font-size: 20px;
+	font-weight: bold;
+	fill:black;	
+}
+
+.tooltip2{
+	text-anchor: left;
+	font-family: times-serif;
+	font-size: 14px;
+	font-weight: bold;
+	fill:red;	
+}
+
+.tooltip3{
+	text-anchor: left;
+	font-family: times-serif;
+	font-size: 14px;
+	font-weight: bold;
+	fill:aqua;	
+}
+
+.tooltip4{
+	text-anchor: left;
+	font-family: times-serif;
+	font-size: 14px;
+	font-weight: bold;
+	fill:yellow;	
+}
+
+
+.tooltip5{
+	text-anchor: left;
+	font-family: times-serif;
+	font-size: 14px;
+	font-weight: bold;
+	fill:purple;	
+}
+
+
+.node.active {
+  fill: blue;
+}
+
+
+    </style>
+
+
+
+    <script type="text/javascript">  
+      function draw(geo_data) {
+        "use strict";
+        var margin = 25,
+            width = 1400 - margin,
+            height = 600 - margin;
+
+        var svg = d3.select("body")
+            .append("svg")
+            .attr("width", width + margin)
+            .attr("height", height + margin)
+            .append('g')
+            .attr('class', 'map');
+
+        var projection = d3.geo.mercator()
+                               .scale(1000)
+                               .translate([-1150, 700]);
+        var path = d3.geo.path().projection(projection);
+
+        var map = svg.selectAll('path')
+                     .data(geo_data.features)
+                     .enter()
+                     .append('path')
+                     .attr('d', path)
+                     .style('fill', 'white')
+                     .style('stroke', 'black')
+                     .style('stroke-width', 0.5);
+
+
+	var color = d3.scale.ordinal()
+    
+	.range(["#d0743c","red", "aqua", "yellow", "purple", "#a05d56"]);
+
+
+
+
+        function plot_points(data){
+		var nestData = d3.nest().key(function(d){return (d['Area']+d['Band']+d['Day'])}).entries(data);
+	var max_price = d3.max(nestData, function(d){return +d.values[0]['Price']})
+	//var max_price =2000;
+	console.log(max_price);
+	var radius = d3.scale.linear()
+			.domain([0,max_price])
+			.range([0,40]);
+		
+            svg.append('g')
+               .attr("class", "bubble")
+               .selectAll("circle")
+               //.data([[78,11],[72,23]])
+	       .data(nestData.sort(function(a,b){
+			return +b.values[0]['Price'] - +a.values[0]['Price']
+		}),key_func)
+	       //.data(nested)
+               .enter()
+               .append("circle")
+               .attr('cx', function(d) { return projection([d.values[0]['long'],d.values[0]['lat']])[0]; })
+               .attr('cy', function(d) { return projection([d.values[0]['long'],d.values[0]['lat']])[1]; })
+               .attr('r', function(d){return radius(+d.values[0]['Price'])})
+	       .attr('class',function(d){return 'b'+d.values[0]['Band']})
+	       .attr('fill','green');
+	//var two = d3.selectAll('circle.2100');
+	d3.selectAll("g.bubble").selectAll('circle.b800').attr('fill','red').attr('opacity',0.7);
+	d3.selectAll("g.bubble").selectAll('circle.b900').attr('fill','aqua').attr('opacity',0.6);
+	d3.selectAll("g.bubble").selectAll('circle.b1800').attr('fill','yellow').attr('opacity',0.7);
+	d3.selectAll("g.bubble").selectAll('circle.b2100').attr('fill','purple').attr('opacity',0.7);
+	function key_func(d) {
+                return d['key'];
+        }
+	
+	function update(currentRound){
+		var filtered = nestData.filter(function(d){
+			return d.values[0]['Day'] == currentRound;
+		})
+	
+		//var circles = svg.selectAll('circle').data(filtered);
+		var circles = d3.select("g.bubble").selectAll('circle').data(filtered,key_func)
+		
+		circles.exit().remove();
+		circles.enter()
+			.append("circle")
+			.attr('cx', function(d) { return projection([d.values[0]['long'],d.values[0]['lat']])[0]; })
+		       .attr('cy', function(d) { return projection([d.values[0]['long'],d.values[0]['lat']])[1]; })
+		       .attr('r', function(d){return radius(+d.values[0]['Price'])})
+		       .attr('class',function(d){return 'b'+d.values[0]['Band']})
+		       .attr('fill','green');
+		d3.selectAll("g.bubble").selectAll('circle.b800').attr('fill','red').attr('opacity',0.7);
+		d3.selectAll("g.bubble").selectAll('circle.b900').attr('fill','aqua').attr('opacity',0.6);
+		d3.selectAll("g.bubble").selectAll('circle.b1800').attr('fill','yellow').attr('opacity',0.7);
+		d3.selectAll("g.bubble").selectAll('circle.b2100').attr('fill','purple').attr('opacity',0.7);
+
+
+
+		//adding legend
+
+      		 var legend1 = svg.append("g")
+		
+              .attr("class", "legend1")
+              .attr("transform", "translate(" + (width - 700) + "," + 250 + ")")
+              .selectAll("g")
+		
+              .data(["LEGEND:"])
+              .enter().append("g");
+              
+
+         	 legend1.append("text")
+		.attr("y", function(d, i) {
+                  return i * 30 + 5;
+            	  })
+		.attr("class","tooltip1")
+              	.text(function(d) {
+                  return d;
+           	   });
+
+
+	var legend2 = svg.append("g")
+		
+              .attr("class", "legend2")
+              .attr("transform", "translate(" + (width - 700) + "," + 280 + ")")
+              .selectAll("g")
+		
+              .data(["800 MHz"])
+              .enter().append("g");
+              
+
+         	 legend2.append("text")
+		.attr("y", function(d, i) {
+                  return i * 30 + 5;
+            	  })
+		.attr("class","tooltip2")
+              	.text(function(d) {
+                  return d;
+           	   });
+
+
+var legend3 = svg.append("g")
+		
+              .attr("class", "legend3")
+              .attr("transform", "translate(" + (width - 700) + "," + 310 + ")")
+              .selectAll("g")
+		
+              .data(["900 MHz"])
+              .enter().append("g");
+              
+
+         	 legend3.append("text")
+		.attr("y", function(d, i) {
+                  return i * 30 + 5;
+            	  })
+		.attr("class","tooltip3")
+              	.text(function(d) {
+                  return d;
+           	   });
+
+
+var legend4 = svg.append("g")
+		
+              .attr("class", "legend4")
+              .attr("transform", "translate(" + (width - 700) + "," + 340 + ")")
+              .selectAll("g")
+		
+              .data(["1800 MHz"])
+              .enter().append("g");
+              
+
+         	 legend4.append("text")
+		.attr("y", function(d, i) {
+                  return i * 30 + 5;
+            	  })
+		.attr("class","tooltip4")
+              	.text(function(d) {
+                  return d;
+           	   });
+
+
+
+var legend5 = svg.append("g")
+		
+              .attr("class", "legend5")
+              .attr("transform", "translate(" + (width - 700) + "," + 370 + ")")
+              .selectAll("g")
+		
+              .data(["2100 MHz"])
+              .enter().append("g");
+              
+
+         	 legend5.append("text")
+		.attr("y", function(d, i) {
+                  return i * 30 + 5;
+            	  })
+		.attr("class","tooltip5")
+              	.text(function(d) {
+                  return d;
+           	   });
+
+		
+		
+	}
+	var rounds = ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19"]
+	var round_index = 0;
+	update("19");
+	/*var round_interval = setInterval(function(){
+		update(rounds[round_index]);
+		round_index++;
+		if(round_index>=rounds.length){
+			clearInterval(round_interval)
+		}
+	},1000);*/
+        }
+	
+	
+
+
+        var format = d3.time.format("%d-%m-%Y (%H:%M h)");
+
+        d3.csv("auction_day19.csv", plot_points);
+
+
+      };
+      </script>
+  </head>
+<body>
+  <script type="text/javascript">
+  /*
+    Use D3 to load the GeoJSON file
+    */
+    
+d3.json("india_states.geojson", draw);
+  </script>
+
+
+
+</body>
+
+<body>
+
+
+<h1><center>INDIA - Spectrum Auction - 2015</center></h1>
+<table align = "center">
+	<tr>
+		<td>
+<text x="50" y="40" font-family="sans-serif" font-size="14px" fill="black" font-weight="bold"><b>Presented by : Anwesha Moitra, Arun K, Vignesh S - M.Tech Students</b></text><br>
+<text x="50" y="60" font-family="sans-serif" font-size="14px" fill="black" font-weight="bold"><b>Guided by    : Prof Jaya Sreevalsan Nair(Ph.D.), Prof V Sridhar(Ph.D.)<b></text><br>
+<text x="50" y="90" font-family="sans-serif" font-size="20px" fill="black" font-weight="bold">Institute     : IIIT  Bangalore</text><br>
+</td>
+<td>
+<div align='right'>
+<img  src="logo.jpg" alt="LOGO"  height="150" width="180"> 
+</div>
+</td>
+</tr>
+</table>
+
+
+<style>
+ul {
+    float: left;
+    width: 100%;
+    padding: 50;
+    margin: 0;
+    list-style-type: none;
+}
+
+a {
+    float: left;
+    width: 10em;
+    text-decoration: none;
+    font-size: 15px;
+    color: white;
+    background-color: purple;
+    padding: 0.2em 0.6em;
+    border-right: 1px solid white;
+	y-index: 450;
+}
+
+a:hover {
+    background-color: orange;
+}
+
+li {
+    display: inline;
+}
+</style>
+</head>
+<body>
+
+<ul>
+<li><a href="auction_last_chart.html">Winning Bid Prices</a></li>
+<li><a href="stacked.html">Price/MHz Analysis</a></li>
+<li><a href="auction_800.html">800 MHz Prices</a></li>
+<li><a href="auction_900.html">900 MHz Prices</a></li>
+<li><a href="auction_1800.html">1800 MHz Prices</a></li>
+<li><a href="auction_2100.html">2100 MHz Prices</a></li>
+<li><a href="auction_last.html">All Band Prices</a></li>
+
+</ul>
+</body>
+
+
+
+<h2><center><br>COMBINED WINNING BID PRICES/MHz (Crores of Rupees/MHz)</br></center></h2>
+
+
+</body>
+</html>
